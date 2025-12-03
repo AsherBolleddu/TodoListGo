@@ -41,6 +41,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("unable to connect to database: %v", err)
 	}
+	defer db.Close()
 	dbQueries := database.New(db)
 
 	mux := http.NewServeMux()

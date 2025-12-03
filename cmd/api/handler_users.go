@@ -7,6 +7,7 @@ import (
 
 	"github.com/AsherBolleddu/TodoListGo/internal/auth"
 	"github.com/AsherBolleddu/TodoListGo/internal/database"
+	"github.com/lib/pq"
 )
 
 func (app *application) handlerUserRegister(w http.ResponseWriter, r *http.Request) {
@@ -38,6 +39,12 @@ func (app *application) handlerUserRegister(w http.ResponseWriter, r *http.Reque
 		HashedPassword: hashedPassword,
 	})
 	if err != nil {
+		if pqErr, ok := err.(*pq.Error); ok {
+			if pqErr.Code == "23505" {
+				respondWithError(w, http.StatusConflict, "Email already exists", nil)
+				return
+			}
+		}
 		respondWithError(w, http.StatusInternalServerError, "Couldn't create user", err)
 		return
 	}
