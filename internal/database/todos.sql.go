@@ -51,6 +51,38 @@ func (q *Queries) CreateTodo(ctx context.Context, arg CreateTodoParams) (Todo, e
 	return i, err
 }
 
+const deleteTodo = `-- name: DeleteTodo :exec
+DELETE FROM todos WHERE id = $1 AND user_id = $2
+`
+
+type DeleteTodoParams struct {
+	ID     uuid.UUID
+	UserID uuid.UUID
+}
+
+func (q *Queries) DeleteTodo(ctx context.Context, arg DeleteTodoParams) error {
+	_, err := q.db.ExecContext(ctx, deleteTodo, arg.ID, arg.UserID)
+	return err
+}
+
+const getTodoByID = `-- name: GetTodoByID :one
+SELECT id, created_at, updated_at, title, description, user_id FROM todos WHERE id = $1
+`
+
+func (q *Queries) GetTodoByID(ctx context.Context, id uuid.UUID) (Todo, error) {
+	row := q.db.QueryRowContext(ctx, getTodoByID, id)
+	var i Todo
+	err := row.Scan(
+		&i.ID,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.Title,
+		&i.Description,
+		&i.UserID,
+	)
+	return i, err
+}
+
 const updateTodo = `-- name: UpdateTodo :one
 UPDATE todos
 SET

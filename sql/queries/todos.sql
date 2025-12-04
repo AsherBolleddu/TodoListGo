@@ -26,3 +26,9 @@ SET
 WHERE
     id = $1
     AND user_id = $2 RETURNING *;
+
+-- name: GetTodoByID :one
+SELECT * FROM todos WHERE id = $1;
+
+-- name: DeleteTodo :exec
+DELETE FROM todos WHERE id = $1 AND user_id = $2;

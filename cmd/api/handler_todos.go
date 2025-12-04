@@ -79,12 +79,33 @@ func (app *application) handlerTodoUpdate(w http.ResponseWriter, r *http.Request
 
 	token, err := auth.GetBearerToken(r.Header)
 	if err != nil {
-		respondWithError(w, http.StatusForbidden, "Forbidden", err)
+		respondWithError(w, http.StatusUnauthorized, "Unauthorized", err)
 		return
 	}
 
 	userID, err := auth.ValidateJWT(token, app.cfg.jwtSecret)
 	if err != nil {
+		respondWithError(w, http.StatusUnauthorized, "Unauthorized", err)
+		return
+	}
+
+	todoID, err := uuid.Parse(r.PathValue("todoID"))
+	if err != nil {
+		respondWithError(w, http.StatusBadRequest, "Invalid todo ID", err)
+		return
+	}
+
+	existingTodo, err := app.db.GetTodoByID(r.Context(), todoID)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			respondWithError(w, http.StatusNotFound, "ToDo not found", nil)
+			return
+		}
+		respondWithError(w, http.StatusInternalServerError, "Internal Server Error", err)
+		return
+	}
+
+	if existingTodo.UserID != userID {
 		respondWithError(w, http.StatusForbidden, "Forbidden", err)
 		return
 	}
@@ -100,24 +121,13 @@ func (app *application) handlerTodoUpdate(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	todoID, err := uuid.Parse(r.PathValue("todoID"))
-	if err != nil {
-		respondWithError(w, http.StatusBadRequest, "Invalid todo ID", err)
-		return
-	}
-
 	updatedTodo, err := app.db.UpdateTodo(r.Context(), database.UpdateTodoParams{
-		ID:          todoID,
-		UserID:      userID,
+		ID:          existingTodo.ID,
+		UserID:      existingTodo.UserID,
 		Title:       params.Title,
 		Description: params.Description,
 	})
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			respondWithError(w, http.StatusNotFound, "ToDo not found", nil)
-			return
-		}
-
 		respondWithError(w, http.StatusInternalServerError, "Internal Server Error", err)
 		return
 	}
@@ -130,4 +140,49 @@ func (app *application) handlerTodoUpdate(w http.ResponseWriter, r *http.Request
 		Description: updatedTodo.Description,
 		UserID:      updatedTodo.UserID,
 	})
+}
+
+func (app *application) handlerTodoDelete(w http.ResponseWriter, r *http.Request) {
+	token, err := auth.GetBearerToken(r.Header)
+	if err != nil {
+		respondWithError(w, http.StatusUnauthorized, "Unauthorized", err)
+		return
+	}
+
+	userID, err := auth.ValidateJWT(token, app.cfg.jwtSecret)
+	if err != nil {
+		respondWithError(w, http.StatusUnauthorized, "Unauthorized", err)
+		return
+	}
+
+	todoID, err := uuid.Parse(r.PathValue("todoID"))
+	if err != nil {
+		respondWithError(w, http.StatusBadRequest, "Invalid todo ID", err)
+		return
+	}
+
+	existingTodo, err := app.db.GetTodoByID(r.Context(), todoID)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			respondWithError(w, http.StatusNotFound, "ToDo not found", nil)
+			return
+		}
+		respondWithError(w, http.StatusInternalServerError, "Internal Server Error", err)
+		return
+	}
+
+	if existingTodo.UserID != userID {
+		respondWithError(w, http.StatusForbidden, "Forbidden", err)
+		return
+	}
+
+	if err = app.db.DeleteTodo(r.Context(), database.DeleteTodoParams{
+		ID:     existingTodo.ID,
+		UserID: existingTodo.UserID,
+	}); err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Internal Server Error", err)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
 }

@@ -73,8 +73,10 @@ func main() {
 
 	mux.HandleFunc("POST /register", app.handlerUserRegister)
 	mux.HandleFunc("POST /login", app.handlerUserLogin)
+
 	mux.HandleFunc("POST /todos", app.handlerTodoCreate)
 	mux.HandleFunc("PUT /todos/{todoID}", app.handlerTodoUpdate)
+	mux.HandleFunc("DELETE /todos/{todoID}", app.handlerTodoDelete)
 
 	log.Printf("Starting server at http://localhost%s", srv.Addr)
 
