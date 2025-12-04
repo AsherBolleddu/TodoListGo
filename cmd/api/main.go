@@ -13,6 +13,7 @@ import (
 )
 
 type config struct {
+	env       string
 	jwtSecret string
 }
 
@@ -25,6 +26,11 @@ func main() {
 	err := godotenv.Load()
 	if err != nil {
 		log.Fatal("Error loading .env file")
+	}
+
+	env := os.Getenv("ENV")
+	if env == "" {
+		log.Fatal("ENV is not set")
 	}
 
 	dbURL := os.Getenv("DB_URL")
@@ -54,6 +60,7 @@ func main() {
 	}
 
 	cfg := &config{
+		env:       env,
 		jwtSecret: jwtSecret,
 	}
 
@@ -62,8 +69,11 @@ func main() {
 		cfg: *cfg,
 	}
 
+	mux.HandleFunc("POST /admin/reset", app.handlerReset)
+
 	mux.HandleFunc("POST /register", app.handlerUserRegister)
 	mux.HandleFunc("POST /login", app.handlerUserLogin)
+	mux.HandleFunc("POST /todos", app.handlerTodoCreate)
 
 	log.Printf("Starting server at http://localhost%s", srv.Addr)
 

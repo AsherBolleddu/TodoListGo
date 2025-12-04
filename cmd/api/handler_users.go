@@ -24,7 +24,7 @@ func (app *application) handlerUserRegister(w http.ResponseWriter, r *http.Reque
 
 	var params parameters
 	if err := json.NewDecoder(r.Body).Decode(&params); err != nil {
-		respondWithError(w, http.StatusInternalServerError, "Couldn't decode parameters", err)
+		respondWithError(w, http.StatusInternalServerError, "Internal Server Error", err)
 		return
 	}
 
@@ -45,7 +45,7 @@ func (app *application) handlerUserRegister(w http.ResponseWriter, r *http.Reque
 
 	hashedPassword, err := auth.HashPassword(params.Password)
 	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, "Couldn't hash password", err)
+		respondWithError(w, http.StatusInternalServerError, "Internal Server Error", err)
 		return
 	}
 
@@ -61,13 +61,13 @@ func (app *application) handlerUserRegister(w http.ResponseWriter, r *http.Reque
 				return
 			}
 		}
-		respondWithError(w, http.StatusInternalServerError, "Couldn't create user", err)
+		respondWithError(w, http.StatusInternalServerError, "Internal Server Error", err)
 		return
 	}
 
 	token, err := auth.MakeJWT(user.ID, app.cfg.jwtSecret, time.Hour)
 	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, "Couldn't make JWT", err)
+		respondWithError(w, http.StatusInternalServerError, "Internal Server Error", err)
 		return
 	}
 
@@ -89,7 +89,7 @@ func (app *application) handlerUserLogin(w http.ResponseWriter, r *http.Request)
 	var params parameters
 	err := json.NewDecoder(r.Body).Decode(&params)
 	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, "Couldn't decode parameters", err)
+		respondWithError(w, http.StatusInternalServerError, "Internal Server Error", err)
 		return
 	}
 
@@ -117,7 +117,7 @@ func (app *application) handlerUserLogin(w http.ResponseWriter, r *http.Request)
 
 	token, err := auth.MakeJWT(user.ID, app.cfg.jwtSecret, time.Hour)
 	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, "Couldn't make JWT", err)
+		respondWithError(w, http.StatusInternalServerError, "Internal Server Error", err)
 		return
 	}
 
