@@ -7,6 +7,7 @@ import (
 
 	"github.com/AsherBolleddu/TodoListGo/internal/auth"
 	"github.com/AsherBolleddu/TodoListGo/internal/database"
+	"github.com/AsherBolleddu/TodoListGo/internal/validation"
 	"github.com/lib/pq"
 )
 
@@ -24,6 +25,21 @@ func (app *application) handlerUserRegister(w http.ResponseWriter, r *http.Reque
 	var params parameters
 	if err := json.NewDecoder(r.Body).Decode(&params); err != nil {
 		respondWithError(w, http.StatusInternalServerError, "Couldn't decode parameters", err)
+		return
+	}
+
+	if !validation.IsNotEmpty(params.Email, params.Name, params.Password) {
+		respondWithError(w, http.StatusBadRequest, "Missing required fields", nil)
+		return
+	}
+
+	if !validation.Matches(params.Email, validation.EmailRX) {
+		respondWithError(w, http.StatusBadRequest, "Invalid email", nil)
+		return
+	}
+
+	if !validation.MinChars(params.Password, 8) {
+		respondWithError(w, http.StatusBadRequest, "Password must be at least 8 characters long", nil)
 		return
 	}
 
@@ -74,6 +90,16 @@ func (app *application) handlerUserLogin(w http.ResponseWriter, r *http.Request)
 	err := json.NewDecoder(r.Body).Decode(&params)
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, "Couldn't decode parameters", err)
+		return
+	}
+
+	if !validation.IsNotEmpty(params.Email, params.Password) {
+		respondWithError(w, http.StatusBadRequest, "Missing required fields", nil)
+		return
+	}
+
+	if !validation.Matches(params.Email, validation.EmailRX) {
+		respondWithError(w, http.StatusBadRequest, "Invalid email", nil)
 		return
 	}
 
