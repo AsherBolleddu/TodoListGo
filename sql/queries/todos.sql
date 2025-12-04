@@ -32,3 +32,16 @@ SELECT * FROM todos WHERE id = $1;
 
 -- name: DeleteTodo :exec
 DELETE FROM todos WHERE id = $1 AND user_id = $2;
+
+-- name: GetTodosByUserID :many
+SELECT *
+FROM todos
+WHERE
+    user_id = $1
+ORDER BY updated_at DESC
+LIMIT $2
+OFFSET
+    $3;
+
+-- name: GetTodosCountByUserID :one
+SELECT COUNT(*) FROM todos where user_id = $1;

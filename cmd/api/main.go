@@ -74,6 +74,7 @@ func main() {
 	mux.HandleFunc("POST /register", app.handlerUserRegister)
 	mux.HandleFunc("POST /login", app.handlerUserLogin)
 
+	mux.HandleFunc("GET /todos", app.handlerTodoRetrieve)
 	mux.HandleFunc("POST /todos", app.handlerTodoCreate)
 	mux.HandleFunc("PUT /todos/{todoID}", app.handlerTodoUpdate)
 	mux.HandleFunc("DELETE /todos/{todoID}", app.handlerTodoDelete)

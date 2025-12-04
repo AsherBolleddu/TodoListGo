@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/AsherBolleddu/TodoListGo/internal/auth"
@@ -185,4 +186,70 @@ func (app *application) handlerTodoDelete(w http.ResponseWriter, r *http.Request
 	}
 
 	w.WriteHeader(http.StatusNoContent)
+}
+
+func (app *application) handlerTodoRetrieve(w http.ResponseWriter, r *http.Request) {
+	type response struct {
+		Data  []ToDo `json:"data"`
+		Page  int    `json:"page"`
+		Limit int    `json:"limit"`
+		Total int    `json:"total"`
+	}
+	token, err := auth.GetBearerToken(r.Header)
+	if err != nil {
+		respondWithError(w, http.StatusUnauthorized, "Unauthorized", err)
+		return
+	}
+
+	userID, err := auth.ValidateJWT(token, app.cfg.jwtSecret)
+	if err != nil {
+		respondWithError(w, http.StatusUnauthorized, "Unauthorized", err)
+		return
+	}
+
+	page, _ := strconv.Atoi(r.URL.Query().Get("page"))
+	if page < 1 {
+		page = 1
+	}
+
+	limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
+	if limit < 1 || limit > 100 {
+		limit = 10
+	}
+
+	offset := (page - 1) * limit
+	dbTodos, err := app.db.GetTodosByUserID(r.Context(), database.GetTodosByUserIDParams{
+		UserID: userID,
+		Limit:  int32(limit),
+		Offset: int32(offset),
+	})
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Internal Server Error", err)
+		return
+	}
+
+	count, err := app.db.GetTodosCountByUserID(r.Context(), userID)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Internal Server Error", err)
+		return
+	}
+
+	todos := make([]ToDo, len(dbTodos))
+	for i, dbTodo := range dbTodos {
+		todos[i] = ToDo{
+			ID:          dbTodo.ID,
+			CreatedAt:   dbTodo.CreatedAt,
+			UpdatedAt:   dbTodo.UpdatedAt,
+			Title:       dbTodo.Title,
+			Description: dbTodo.Description,
+			UserID:      dbTodo.UserID,
+		}
+	}
+
+	respondWithJSON(w, http.StatusOK, response{
+		Data:  todos,
+		Page:  page,
+		Limit: limit,
+		Total: int(count),
+	})
 }

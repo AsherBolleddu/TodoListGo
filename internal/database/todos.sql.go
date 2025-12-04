@@ -83,6 +83,64 @@ func (q *Queries) GetTodoByID(ctx context.Context, id uuid.UUID) (Todo, error) {
 	return i, err
 }
 
+const getTodosByUserID = `-- name: GetTodosByUserID :many
+SELECT id, created_at, updated_at, title, description, user_id
+FROM todos
+WHERE
+    user_id = $1
+ORDER BY updated_at DESC
+LIMIT $2
+OFFSET
+    $3
+`
+
+type GetTodosByUserIDParams struct {
+	UserID uuid.UUID
+	Limit  int32
+	Offset int32
+}
+
+func (q *Queries) GetTodosByUserID(ctx context.Context, arg GetTodosByUserIDParams) ([]Todo, error) {
+	rows, err := q.db.QueryContext(ctx, getTodosByUserID, arg.UserID, arg.Limit, arg.Offset)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Todo
+	for rows.Next() {
+		var i Todo
+		if err := rows.Scan(
+			&i.ID,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.Title,
+			&i.Description,
+			&i.UserID,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getTodosCountByUserID = `-- name: GetTodosCountByUserID :one
+SELECT COUNT(*) FROM todos where user_id = $1
+`
+
+func (q *Queries) GetTodosCountByUserID(ctx context.Context, userID uuid.UUID) (int64, error) {
+	row := q.db.QueryRowContext(ctx, getTodosCountByUserID, userID)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const updateTodo = `-- name: UpdateTodo :one
 UPDATE todos
 SET
