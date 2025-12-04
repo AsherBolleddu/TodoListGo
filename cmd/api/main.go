@@ -63,6 +63,7 @@ func main() {
 	}
 
 	mux.HandleFunc("POST /register", app.handlerUserRegister)
+	mux.HandleFunc("POST /login", app.handlerUserLogin)
 
 	log.Printf("Starting server at http://localhost%s", srv.Addr)
 

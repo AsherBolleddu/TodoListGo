@@ -17,6 +17,10 @@ func HashPassword(password string) (string, error) {
 	return hash, nil
 }
 
+func CheckPasswordHash(password, hash string) (bool, error) {
+	return argon2id.ComparePasswordAndHash(password, hash)
+}
+
 func MakeJWT(userID uuid.UUID, tokenSecret string, expiresIn time.Duration) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.RegisteredClaims{
 		Issuer:    "todo",

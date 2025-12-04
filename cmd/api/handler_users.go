@@ -59,3 +59,43 @@ func (app *application) handlerUserRegister(w http.ResponseWriter, r *http.Reque
 		Token: token,
 	})
 }
+
+func (app *application) handlerUserLogin(w http.ResponseWriter, r *http.Request) {
+	type parameters struct {
+		Email    string `json:"email"`
+		Password string `json:"password"`
+	}
+
+	type response struct {
+		Token string `json:"token"`
+	}
+
+	var params parameters
+	err := json.NewDecoder(r.Body).Decode(&params)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Couldn't decode parameters", err)
+		return
+	}
+
+	user, err := app.db.GetUserByEmail(r.Context(), params.Email)
+	if err != nil {
+		respondWithError(w, http.StatusUnauthorized, "Incorrect email or password", err)
+		return
+	}
+
+	ok, err := auth.CheckPasswordHash(params.Password, user.HashedPassword)
+	if !ok || err != nil {
+		respondWithError(w, http.StatusUnauthorized, "Incorrect email or password", err)
+		return
+	}
+
+	token, err := auth.MakeJWT(user.ID, app.cfg.jwtSecret, time.Hour)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Couldn't make JWT", err)
+		return
+	}
+
+	respondWithJSON(w, http.StatusOK, response{
+		Token: token,
+	})
+}
