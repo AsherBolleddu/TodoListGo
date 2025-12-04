@@ -50,3 +50,40 @@ func (q *Queries) CreateTodo(ctx context.Context, arg CreateTodoParams) (Todo, e
 	)
 	return i, err
 }
+
+const updateTodo = `-- name: UpdateTodo :one
+UPDATE todos
+SET
+    title = $3,
+    description = $4,
+    updated_at = NOW()
+WHERE
+    id = $1
+    AND user_id = $2 RETURNING id, created_at, updated_at, title, description, user_id
+`
+
+type UpdateTodoParams struct {
+	ID          uuid.UUID
+	UserID      uuid.UUID
+	Title       string
+	Description string
+}
+
+func (q *Queries) UpdateTodo(ctx context.Context, arg UpdateTodoParams) (Todo, error) {
+	row := q.db.QueryRowContext(ctx, updateTodo,
+		arg.ID,
+		arg.UserID,
+		arg.Title,
+		arg.Description,
+	)
+	var i Todo
+	err := row.Scan(
+		&i.ID,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.Title,
+		&i.Description,
+		&i.UserID,
+	)
+	return i, err
+}
