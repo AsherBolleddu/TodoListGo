@@ -10,6 +10,15 @@ import (
 	"github.com/google/uuid"
 )
 
+type Todo struct {
+	ID          uuid.UUID
+	CreatedAt   time.Time
+	UpdatedAt   time.Time
+	Title       string
+	Description string
+	UserID      uuid.UUID
+}
+
 type User struct {
 	ID             uuid.UUID
 	CreatedAt      time.Time
