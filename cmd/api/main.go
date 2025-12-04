@@ -15,6 +15,7 @@ import (
 type config struct {
 	env       string
 	jwtSecret string
+	port      string
 }
 
 type application struct {
@@ -31,6 +32,11 @@ func main() {
 	env := os.Getenv("ENV")
 	if env == "" {
 		log.Fatal("ENV is not set")
+	}
+
+	port := os.Getenv("PORT")
+	if port == "" {
+		log.Fatal("PORT is not set")
 	}
 
 	dbURL := os.Getenv("DB_URL")
@@ -50,23 +56,24 @@ func main() {
 	defer db.Close()
 	dbQueries := database.New(db)
 
-	mux := http.NewServeMux()
-	srv := &http.Server{
-		Addr:         ":8080",
-		Handler:      mux,
-		IdleTimeout:  time.Minute,
-		ReadTimeout:  5 * time.Second,
-		WriteTimeout: 10 * time.Second,
-	}
-
 	cfg := &config{
 		env:       env,
 		jwtSecret: jwtSecret,
+		port:      port,
 	}
 
 	app := &application{
 		db:  dbQueries,
 		cfg: *cfg,
+	}
+
+	mux := http.NewServeMux()
+	srv := &http.Server{
+		Addr:         ":" + app.cfg.port,
+		Handler:      mux,
+		IdleTimeout:  time.Minute,
+		ReadTimeout:  5 * time.Second,
+		WriteTimeout: 10 * time.Second,
 	}
 
 	mux.HandleFunc("POST /admin/reset", app.handlerReset)
